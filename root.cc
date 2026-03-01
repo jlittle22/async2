@@ -51,28 +51,24 @@ class SomeTask : public pw::async2::Task {
 
  private:
   pw::async2::Poll<> DoPend(pw::async2::Context& context) override {
-    if (data_count_ >= 10) {
-      PW_LOG_INFO("All work done.");
-      return pw::async2::Ready();
-    }
-
-    while (true) {
+    while (data_count_ < 10) {
       // Step 1: Request the data
       if (!value_future_.is_pendable()) {
-        PW_LOG_INFO("Getting hardware data.");
         value_future_ = hardware_.GetData();
       }
 
       pw::async2::Poll<size_t> result = value_future_.Pend(context);
       if (result.IsPending()) {
-        PW_LOG_INFO("Waiting for hardware data.");
         return pw::async2::Pending();
       }
 
       // Step 2: Read data.
-      PW_LOG_INFO("Got hardware data: %zu", result.value());
+      PW_LOG_INFO("%zu", result.value());
       data_count_++;
     }
+
+    PW_LOG_INFO("All work done.");
+    return pw::async2::Ready();
   }
 
   pw::chrono::SystemClock::duration duration_;
