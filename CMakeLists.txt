@@ -22,6 +22,7 @@ pw_add_library(root STATIC
     pw_async2
     pw_async2.basic_dispatcher
     pw_async2.system_time_provider
+    pw_async2.value_future
     pw_log
 )
 
