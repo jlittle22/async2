@@ -52,17 +52,29 @@ class SomeTask : public pw::async2::Task {
  private:
   pw::async2::Poll<> DoPend(pw::async2::Context& context) override {
     while (data_count_ < 10) {
-      // Step 1: Request the data
+      // If the future is empty OR completed, reassign a new future.
       if (!value_future_.is_pendable()) {
         value_future_ = hardware_.GetData();
       }
 
+      // `Poll` is the status of a future (async operation). It can either show
+      // the operation result is ready or pending. If the data is ready, Poll<T>
+      // contains the result. Poll<> does not contain data- just the operation
+      // status.
+      //
+      // The `Pend` call is very important. Getting a future is not meaningful
+      // on its own. `Pend` actually initiates the work the future represents.
+      //
+      // `Pend` registers a waker with the context (i.e. the dispatcher) if the
+      // work is not immediately done.
       pw::async2::Poll<size_t> result = value_future_.Pend(context);
       if (result.IsPending()) {
+        // A task can't return Pending() unless it has a waker associated with
+        // it registered with the dispatcher. `Pend` registers the waker if the
+        // work isn't ready when called.
         return pw::async2::Pending();
       }
 
-      // Step 2: Read data.
       PW_LOG_INFO("%zu", result.value());
       data_count_++;
     }
